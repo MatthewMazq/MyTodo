@@ -22,3 +22,9 @@ export function deduplicateByUrl(articles: Article[]): Article[] {
     return true;
   });
 }
+
+export function randomSample(articles: Article[], count: number): Article[] {
+  if (articles.length <= count) return articles;
+  const shuffled = [...articles].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count);
+}

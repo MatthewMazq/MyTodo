@@ -1,12 +1,13 @@
 import { RSS_SOURCES, Article } from "./types.js";
 import { fetchRSS } from "./fetcher.js";
 import { parseRSS } from "./parser.js";
-import { filterLast24Hours, sortByDateDesc, deduplicateByUrl } from "./filter.js";
+import { filterLast24Hours, sortByDateDesc, deduplicateByUrl, randomSample } from "./filter.js";
 import { formatMarkdown } from "./formatter.js";
 import { saveReport } from "./output.js";
 import { translateToChinese } from "./translator.js";
 
 const CONCURRENCY_LIMIT = 5;
+const HN_SAMPLE_COUNT = 10;
 
 async function translateDescriptions(articles: Article[]): Promise<Article[]> {
   console.log("\n翻译摘要中...");
@@ -63,8 +64,15 @@ async function main() {
   const uniqueArticles = deduplicateByUrl(sortedArticles);
   console.log(`去重后: ${uniqueArticles.length} 篇`);
 
+  // Hacker News 随机采样10篇
+  const hnArticles = uniqueArticles.filter((a) => a.source === "Hacker News");
+  const otherArticles = uniqueArticles.filter((a) => a.source !== "Hacker News");
+  const sampledHnArticles = randomSample(hnArticles, HN_SAMPLE_COUNT);
+  const finalArticles = [...otherArticles, ...sampledHnArticles];
+  console.log(`Hacker News 采样: ${hnArticles.length} -> ${sampledHnArticles.length} 篇`);
+
   // 翻译摘要
-  const articlesWithChineseDesc = await translateDescriptions(uniqueArticles);
+  const articlesWithChineseDesc = await translateDescriptions(finalArticles);
 
   // 生成Markdown
   const markdown = formatMarkdown(articlesWithChineseDesc, new Date());
